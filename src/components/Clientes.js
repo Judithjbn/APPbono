@@ -1,6 +1,8 @@
+// src/components/Clientes.js
 import React, { useState, useEffect } from 'react';
 import { db } from '../firebaseConfig';
 import { collection, addDoc, getDocs, deleteDoc, doc } from 'firebase/firestore';
+import { Link } from 'react-router-dom';
 
 function Clientes() {
   const [nombre, setNombre] = useState('');
@@ -71,7 +73,7 @@ function Clientes() {
       <ul>
         {clientes.map((cliente) => (
           <li key={cliente.id}>
-            {cliente.nombre} - {cliente.tipoCliente}
+            <Link to={`/cliente/${cliente.id}`}>{cliente.nombre}</Link> - {cliente.tipoCliente}
             <button onClick={() => eliminarCliente(cliente.id)}>Eliminar</button>
           </li>
         ))}

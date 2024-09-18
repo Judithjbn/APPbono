@@ -1,9 +1,9 @@
-// src/App.js
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import Home from './components/Home';
 import Clientes from './components/Clientes';
 import Bonos from './components/Bonos';
+import ClienteDetalle from './components/ClienteDetalle';
 
 function App() {
   return (
@@ -19,6 +19,7 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/clientes" element={<Clientes />} />
         <Route path="/bonos" element={<Bonos />} />
+        <Route path="/cliente/:id" element={<ClienteDetalle />} />
       </Routes>
     </Router>
   );

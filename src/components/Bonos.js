@@ -18,6 +18,7 @@ function Bonos() {
         clienteId: clienteSeleccionado,
         tipoBono,
         numeroSesiones,
+        sesionesRestantes: numeroSesiones, // Añade este campo
         estadoPago,
         fechaCreacion: new Date(),
       });
