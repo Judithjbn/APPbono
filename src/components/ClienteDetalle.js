@@ -83,14 +83,21 @@ function ClienteDetalle() {
     return <div>Cargando...</div>;
   }
 
+  if (!cliente) {
+    return <div>Cargando...</div>;
+  }
+  const bonosActivos = bonos.filter((bono) => bono.sesionesRestantes > 0);
+  const bonosGastados = bonos.filter((bono) => bono.sesionesRestantes === 0);
+
+
   return (
     <div>
       <h1>Detalle del Cliente</h1>
       <h2>{cliente.nombre}</h2>
       <p>Tipo de Cliente: {cliente.tipoCliente}</p>
 
-      <h2>Bonos</h2>
-      {bonos.map((bono) => (
+      <h2>Bonos Activos</h2>
+      {bonosActivos.map((bono) => (
         <div key={bono.id}>
           <h3>{bono.tipoBono}</h3>
           <p>Número de Sesiones/Horas: {bono.numeroSesiones}</p>

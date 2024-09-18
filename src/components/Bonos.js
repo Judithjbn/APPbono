@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../firebaseConfig';
 import { collection, addDoc, getDocs, deleteDoc, doc } from 'firebase/firestore';
+import { Link } from 'react-router-dom';
 
 function Bonos() {
   const [clientes, setClientes] = useState([]);
@@ -151,7 +152,12 @@ function Bonos() {
             const cliente = clientes.find((c) => c.id === bono.clienteId);
             return (
               <tr key={bono.id}>
-                <td>{cliente ? cliente.nombre : "Cliente no encontrado"}</td>
+                <td>{cliente ? (
+                <Link to={`/cliente/${cliente.id}`}>{cliente.nombre}</Link> 
+              ):
+              ('Cliente no encontrado')
+              }
+              </td>
                 <td>{bono.tipoBono}</td>
                 <td>{bono.numeroSesiones}</td>
                 <td
