@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { db } from "../firebaseConfig";
+import { Timestamp } from 'firebase/firestore';
 import {
   doc,
   getDoc,
@@ -68,7 +69,7 @@ function ClienteDetalle() {
     try {
       // restar una sesión
       const bonoRef = doc(db, "bonos", bonoId);
-      const fechaActual = new Date();
+      const fechaActual = Timestamp.now();
 
       await updateDoc(bonoRef, {
         sesionesRestantes: sesionesRestantes - 1,
@@ -142,13 +143,14 @@ function ClienteDetalle() {
         <>
           <h2>Bonos Gastados</h2>
           {bonosGastados.map((bono) => {
-            const ultimaFecha = bono.ultimaAsistencia ? new Date(bono.ultimaAsistencia) : null;
+            const ultimaFecha = bono.ultimaAsistencia ? bono.ultimaAsistencia.toDate() : null;
             //const ultimaFecha = fechasUltimasSesiones[bono.id];
             const estadoPago = bono.estadoPago;
             const titulo = `Bono gastado${
               ultimaFecha ? ` - Última sesión: ${ultimaFecha.toLocaleDateString()}` : ''
             } - Estado de Pago: ${estadoPago}`;
-
+            console.log('ultimaFecha:', ultimaFecha);
+            
             return (
               <div key={bono.id}>
                 <div

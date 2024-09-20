@@ -46,7 +46,7 @@ function Asistencias({ bonoId, sesionesRestantes }) {
       if (asistenciasRestantes.length > 0) {
         // ordenar y obtener la última
         asistenciasRestantes.sort((a, b) => b.fecha.toDate() - a.fecha.toDate());
-        nuevaUltimaAsistencia = asistenciasRestantes[0].fecha.toDate();
+        nuevaUltimaAsistencia = asistenciasRestantes[0].fecha;
       }
 
       const bonoRef = doc(db, 'bonos', bonoId);
@@ -75,7 +75,7 @@ function Asistencias({ bonoId, sesionesRestantes }) {
 
       // ordenar y encontrar la más reciente
       asistencias.sort((a, b) => b.fecha.toDate() - a.fecha.toDate());
-      const ultimaAsistenciaFecha = asistencias[0].fecha.toDate();
+      const ultimaAsistenciaFecha = asistencias[0].fecha;
 
       const bonoRef = doc(db, 'bonos', bonoId);
       await updateDoc(bonoRef, {
