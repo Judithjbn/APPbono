@@ -169,9 +169,15 @@ function ClienteDetalle() {
                     {/* detalles del bono */}
                     <h3>{bono.tipoBono}</h3>
                     <p>Número de Sesiones/Horas: {bono.numeroSesiones}</p>
-                    <p style={{ color: bono.estadoPago === 'Pagado' ? 'green' : 'red' }}>
+                    {/*<p style={{ color: bono.estadoPago === 'Pagado' ? 'green' : 'red' }}>
                       Estado de Pago: {bono.estadoPago}
-                    </p>
+                    </p>*/}
+                    <label> Estado de Pago: 
+                      <select value={bono.estadoPago} onChange={(e) => actualizarEstadoPago(bono.id, e.target.value)}>
+                        <option value="Pendiente">Pendiente</option>
+                        <option value="Pagado">Pagado</option>
+                      </select>
+                    </label>
                     <h4>Asistencias</h4>
                     <Asistencias
                       bonoId={bono.id}
