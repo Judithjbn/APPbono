@@ -17,7 +17,6 @@ function ClienteDetalle() {
   const { id } = useParams();
   const [cliente, setCliente] = useState(null);
   const [bonos, setBonos] = useState([]);
-  const [fechasUltimasSesiones, setFechasUltimasSesiones] = useState({});
   const [bonosDesplegados, setBonosDesplegados] = useState({});
 
 
@@ -52,38 +51,6 @@ function ClienteDetalle() {
     obtenerClienteYBonos();
   }, [id]);
 
-  // fechas de las últimas sesiones de bonos gastados
-  useEffect(() => {
-    const bonosGastados = bonos.filter((bono) => bono.sesionesRestantes === 0);
-
-    const obtenerFechasUltimasSesiones = async () => {
-      const nuevasFechas = {};
-      for (const bono of bonosGastados) {
-        try {
-          const asistenciasRef = collection(db, "bonos", bono.id, "asistencias");
-          const asistenciasSnapshot = await getDocs(asistenciasRef);
-          const asistencias = asistenciasSnapshot.docs.map((doc) => doc.data());
-
-          if (asistencias.length > 0) {
-            asistencias.sort((a, b) => a.fecha.toDate() - b.fecha.toDate());
-
-          const ultimaFecha = asistencias[asistencias.length - 1].fecha.toDate();
-          nuevasFechas[bono.id] = ultimaFecha;
-          }
-        }
-        catch (e) {
-          console.error("Error al obtener fechas de las últimas sesiones de bonos gastados: ", e);
-        }
-      }
-
-      setFechasUltimasSesiones(nuevasFechas);
-    };
-
-    if (bonosGastados.length > 0) {
-      obtenerFechasUltimasSesiones();
-    }
-  }, [bonos]);
-
   // altermar los bonos desplegados
   const toggleBonoDesplegado = (bonoId) => {
     setBonosDesplegados((prevState) => ({
@@ -101,11 +68,14 @@ function ClienteDetalle() {
     try {
       // restar una sesión
       const bonoRef = doc(db, "bonos", bonoId);
+      const fechaActual = new Date();
+
       await updateDoc(bonoRef, {
         sesionesRestantes: sesionesRestantes - 1,
+        ultimaAsistencia: fechaActual,
       });
       await addDoc(collection(bonoRef, "asistencias"), {
-        fecha: new Date(),
+        fecha: fechaActual,
       });
       obtenerClienteYBonos();
     } catch (e) {
@@ -172,10 +142,12 @@ function ClienteDetalle() {
         <>
           <h2>Bonos Gastados</h2>
           {bonosGastados.map((bono) => {
-            const ultimaFecha = fechasUltimasSesiones[bono.id];
+            const ultimaFecha = bono.ultimaAsistencia ? new Date(bono.ultimaAsistencia) : null;
+            //const ultimaFecha = fechasUltimasSesiones[bono.id];
+            const estadoPago = bono.estadoPago;
             const titulo = `Bono gastado${
               ultimaFecha ? ` - Última sesión: ${ultimaFecha.toLocaleDateString()}` : ''
-            }`;
+            } - Estado de Pago: ${estadoPago}`;
 
             return (
               <div key={bono.id}>
