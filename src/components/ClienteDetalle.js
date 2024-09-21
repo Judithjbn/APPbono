@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
+import { Link } from 'react-router-dom';
 import { db } from "../firebaseConfig";
 import { Timestamp } from 'firebase/firestore';
 import {
@@ -19,7 +20,6 @@ function ClienteDetalle() {
   const [cliente, setCliente] = useState(null);
   const [bonos, setBonos] = useState([]);
   const [bonosDesplegados, setBonosDesplegados] = useState({});
-
 
   const obtenerClienteYBonos = async () => {
     try {
@@ -52,7 +52,7 @@ function ClienteDetalle() {
     obtenerClienteYBonos();
   }, [id]);
 
-  // altermar los bonos desplegados
+  // alternar los bonos desplegados
   const toggleBonoDesplegado = (bonoId) => {
     setBonosDesplegados((prevState) => ({
       ...prevState,
@@ -60,7 +60,6 @@ function ClienteDetalle() {
     }));
   };
 
-  
   const registrarAsistencia = async (bonoId, sesionesRestantes) => {
     if (sesionesRestantes <= 0) {
       alert("No quedan sesiones disponibles en este bono.");
@@ -110,46 +109,51 @@ function ClienteDetalle() {
       <p>Tipo de Cliente: {cliente.tipoCliente}</p>
 
       <h2>Bonos Activos</h2>
-      {bonosActivos.map((bono) => (
-        <div key={bono.id}>
-          <h3>{bono.tipoBono}</h3>
-          <p>Número de Sesiones/Horas: {bono.numeroSesiones}</p>
-          <p>Sesiones/Horas Restantes: {bono.sesionesRestantes}</p>
-          <p style={{ color: bono.estadoPago === "Pagado" ? "green" : "red" }}>
-            Estado de Pago: {bono.estadoPago}
-          </p>
-          <button
-            onClick={() => registrarAsistencia(bono.id, bono.sesionesRestantes)}
-          >
-            Registrar Asistencia
-          </button>
-          <button onClick={() => actualizarEstadoPago(bono.id, "Pagado")}>
-            Marcar como Pagado
-          </button>
-          <button onClick={() => actualizarEstadoPago(bono.id, "Pendiente")}>
-            Marcar como Pendiente
-          </button>
-          {/* Mostrar las fechas de asistencia */}
-          <h4>Asistencias</h4>
-          <Asistencias
-            bonoId={bono.id}
-            sesionesRestantes={bono.sesionesRestantes}
-          />
-        </div>
-      ))}
 
-            {/* Bonos Gastados */}
-            {bonosGastados.length > 0 && (
+      {bonosActivos.length > 0 ? (
+        bonosActivos.map((bono) => (
+          <div key={bono.id}>
+            <h3>{bono.tipoBono}</h3>
+            <p>Número de Sesiones/Horas: {bono.numeroSesiones}</p>
+            <p>Sesiones/Horas Restantes: {bono.sesionesRestantes}</p>
+            <p style={{ color: bono.estadoPago === "Pagado" ? "green" : "red" }}>
+              Estado de Pago: {bono.estadoPago}
+            </p>
+            <button
+              onClick={() => registrarAsistencia(bono.id, bono.sesionesRestantes)}
+            >
+              Registrar Asistencia
+            </button>
+            <button onClick={() => actualizarEstadoPago(bono.id, "Pagado")}>
+              Marcar como Pagado
+            </button>
+            <button onClick={() => actualizarEstadoPago(bono.id, "Pendiente")}>
+              Marcar como Pendiente
+            </button>
+            <h4>Asistencias</h4>
+            <Asistencias
+              bonoId={bono.id}
+              sesionesRestantes={bono.sesionesRestantes}
+            />
+          </div>
+        ))
+      ) : (
+        <div>
+          <p>No hay bonos activos para este cliente.</p>
+          <Link to="/bonos">Añadir Bono Nuevo</Link>
+        </div>
+      )}
+
+      {/* Bonos Gastados */}
+      {bonosGastados.length > 0 && (
         <>
           <h2>Bonos Gastados</h2>
           {bonosGastados.map((bono) => {
             const ultimaFecha = bono.ultimaAsistencia ? bono.ultimaAsistencia.toDate() : null;
-            //const ultimaFecha = fechasUltimasSesiones[bono.id];
             const estadoPago = bono.estadoPago;
             const titulo = `Bono gastado${
               ultimaFecha ? ` - Última sesión: ${ultimaFecha.toLocaleDateString()}` : ''
             } - Estado de Pago: ${estadoPago}`;
-            console.log('ultimaFecha:', ultimaFecha);
             
             return (
               <div key={bono.id}>
@@ -169,9 +173,6 @@ function ClienteDetalle() {
                     {/* detalles del bono */}
                     <h3>{bono.tipoBono}</h3>
                     <p>Número de Sesiones/Horas: {bono.numeroSesiones}</p>
-                    {/*<p style={{ color: bono.estadoPago === 'Pagado' ? 'green' : 'red' }}>
-                      Estado de Pago: {bono.estadoPago}
-                    </p>*/}
                     <label> Estado de Pago: 
                       <select value={bono.estadoPago} onChange={(e) => actualizarEstadoPago(bono.id, e.target.value)}>
                         <option value="Pendiente">Pendiente</option>
