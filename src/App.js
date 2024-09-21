@@ -1,3 +1,5 @@
+import './index.css'; // O el nombre de tu archivo CSS principal
+
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import Home from './components/Home';

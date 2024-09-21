@@ -1,3 +1,5 @@
+import './index.css'; // O el nombre de tu archivo CSS principal
+
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './index.css';
