@@ -1,19 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../firebaseConfig';
-import {
-  collection,
-  getDocs,
-  deleteDoc,
-  doc,
-  Timestamp,
-  updateDoc,
-} from 'firebase/firestore';
+import { collection, getDocs, deleteDoc, doc, Timestamp, updateDoc } from 'firebase/firestore';
+import { Edit, Trash2 } from 'lucide-react'; // iconos editar y eliminar
 
 function Asistencias({ bonoId, sesionesRestantes }) {
   const [asistencias, setAsistencias] = useState([]);
   const [asistenciaEditando, setAsistenciaEditando] = useState(null);
   const [nuevaFecha, setNuevaFecha] = useState('');
-
 
   const obtenerAsistencias = async () => {
     try {
@@ -32,7 +25,7 @@ function Asistencias({ bonoId, sesionesRestantes }) {
   useEffect(() => {
     obtenerAsistencias();
   }, [bonoId]);
-  
+
   const eliminarAsistencia = async (asistenciaId) => {
     try {
       const asistenciaRef = doc(db, 'bonos', bonoId, 'asistencias', asistenciaId);
@@ -44,7 +37,6 @@ function Asistencias({ bonoId, sesionesRestantes }) {
 
       let nuevaUltimaAsistencia = null;
       if (asistenciasRestantes.length > 0) {
-        // ordenar y obtener la última
         asistenciasRestantes.sort((a, b) => b.fecha.toDate() - a.fecha.toDate());
         nuevaUltimaAsistencia = asistenciasRestantes[0].fecha;
       }
@@ -69,19 +61,6 @@ function Asistencias({ bonoId, sesionesRestantes }) {
         fecha: nuevaFechaTimestamp,
       });
 
-      const asistenciasRef = collection(db, 'bonos', bonoId, 'asistencias');
-      const asistenciasSnapshot = await getDocs(asistenciasRef);
-      const asistencias = asistenciasSnapshot.docs.map((doc) => doc.data());
-
-      // ordenar y encontrar la más reciente
-      asistencias.sort((a, b) => b.fecha.toDate() - a.fecha.toDate());
-      const ultimaAsistenciaFecha = asistencias[0].fecha;
-
-      const bonoRef = doc(db, 'bonos', bonoId);
-      await updateDoc(bonoRef, {
-        ultimaAsistencia: ultimaAsistenciaFecha,
-      });
-
       setAsistenciaEditando(null);
       obtenerAsistencias();
     } catch (e) {
@@ -90,36 +69,67 @@ function Asistencias({ bonoId, sesionesRestantes }) {
   };
 
   return (
-    <ul>
-      {asistencias.map((asistencia) => (
-        <li key={asistencia.id}>
-          {asistenciaEditando === asistencia.id ? (
-            <>
-              <input
-                type="date"
-                value={nuevaFecha}
-                onChange={(e) => setNuevaFecha(e.target.value)}
-              />
-              <button onClick={() => guardarFechaAsistencia(asistencia.id)}>Guardar</button>
-              <button onClick={() => setAsistenciaEditando(null)}>Cancelar</button>
-            </>
-          ) : (
-            <>
-              {asistencia.fecha.toDate().toLocaleDateString()}
-              <button
-                onClick={() => {
-                  setAsistenciaEditando(asistencia.id);
-                  setNuevaFecha(asistencia.fecha.toDate().toISOString().split('T')[0]);
-                }}
-              >
-                Editar
-              </button>
-              <button onClick={() => eliminarAsistencia(asistencia.id)}>Eliminar</button>
-            </>
-          )}
-        </li>
-      ))}
-    </ul>
+    <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <h2 className="text-2xl font-bold mb-4">Asistencias</h2>
+
+      <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-md">
+        <table className="min-w-full bg-white">
+          <thead>
+            <tr className="bg-gray-100">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Editar</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Eliminar</th>
+            </tr>
+          </thead>
+          <tbody>
+            {asistencias.map((asistencia) => (
+              <tr key={asistencia.id} className="border-b">
+                <td className="px-6 py-4 whitespace-nowrap">
+                  {asistenciaEditando === asistencia.id ? (
+                    <input
+                      type="date"
+                      value={nuevaFecha}
+                      onChange={(e) => setNuevaFecha(e.target.value)}
+                      className="border rounded px-2 py-1 w-full"
+                    />
+                  ) : (
+                    asistencia.fecha.toDate().toLocaleDateString()
+                  )}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  {asistenciaEditando === asistencia.id ? (
+                    <button
+                      onClick={() => guardarFechaAsistencia(asistencia.id)}
+                      className="text-green-500 hover:text-green-700 mr-2"
+                    >
+                      Guardar
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        setAsistenciaEditando(asistencia.id);
+                        setNuevaFecha(asistencia.fecha.toDate().toISOString().split('T')[0]);
+                      }}
+                      className="text-blue-500 hover:text-blue-700"
+                    >
+                      <Edit className="inline-block h-5 w-5" />
+                    </button>
+                  )}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <button
+                    onClick={() => eliminarAsistencia(asistencia.id)}
+                    className="text-red-500 hover:text-red-700"
+                  >
+                    <Trash2 className="inline-block h-5 w-5" />
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
   );
 }
 

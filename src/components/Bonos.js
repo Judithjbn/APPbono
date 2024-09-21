@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { db } from '../firebaseConfig';
 import { collection, addDoc, getDocs, deleteDoc, doc } from 'firebase/firestore';
 import { Link } from 'react-router-dom';
+import { Trash2 } from 'lucide-react'; // icono papelera
 
 function Bonos() {
   const [clientes, setClientes] = useState([]);
@@ -9,9 +10,8 @@ function Bonos() {
   const [tipoBono, setTipoBono] = useState('Alquiler de espacio');
   const [numeroSesiones, setNumeroSesiones] = useState(1);
   const [estadoPago, setEstadoPago] = useState('Pendiente');
-  const [bonos, setBonos] = useState([]); // estado para almacenar los bonos
+  const [bonos, setBonos] = useState([]);
 
-  //función para agregar un nuevo bono
   const agregarBono = async (e) => {
     e.preventDefault();
     try {
@@ -19,11 +19,12 @@ function Bonos() {
         clienteId: clienteSeleccionado,
         tipoBono,
         numeroSesiones,
-        sesionesRestantes: numeroSesiones, // Añade este campo
+        sesionesRestantes: numeroSesiones,
         estadoPago,
         fechaCreacion: new Date(),
       });
 
+      // reiniciar el formulario
       setTipoBono('Alquiler de espacio');
       setNumeroSesiones(1);
       setEstadoPago('Pendiente');
@@ -52,8 +53,6 @@ function Bonos() {
       }
     };
 
-    
-
     obtenerClientes();
     obtenerBonos();
   }, []);
@@ -74,22 +73,24 @@ function Bonos() {
   const eliminarBono = async (id) => {
     try {
       await deleteDoc(doc(db, 'bonos', id));
-      obtenerBonos(); // actualizamos la lista de bonos
+      obtenerBonos();
     } catch (e) {
       console.error('Error al eliminar bono: ', e);
     }
   };
 
   return (
-    <div>
-      <h1>Gestión de Bonos</h1>
-      {/* Formulario para agregar bonos */}
-      <form onSubmit={agregarBono}>
-        <label>
-          Cliente:
+    <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <h1 className="text-2xl font-bold mb-4">Gestión de Bonos</h1>
+
+      {/* Form para agregar bonos */}
+      <form onSubmit={agregarBono} className="space-y-4 mb-8">
+        <div>
+          <label className="block font-medium text-gray-700">Cliente:</label>
           <select
             value={clienteSeleccionado}
             onChange={(e) => setClienteSeleccionado(e.target.value)}
+            className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
           >
             {clientes.map((cliente) => (
               <option key={cliente.id} value={cliente.id}>
@@ -97,86 +98,106 @@ function Bonos() {
               </option>
             ))}
           </select>
-        </label>
-        <br />
-        <label>
-          Tipo de Bono:
+        </div>
+
+        <div>
+          <label className="block font-medium text-gray-700">Tipo de Bono:</label>
           <select
             value={tipoBono}
             onChange={(e) => setTipoBono(e.target.value)}
+            className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
           >
             <option value="Alquiler de espacio">Alquiler de espacio</option>
             <option value="Bono de sesiones">Bono de sesiones</option>
           </select>
-        </label>
-        <br />
-        <label>
-          Número de sesiones u horas:
+        </div>
+
+        <div>
+          <label className="block font-medium text-gray-700">Número de Sesiones u Horas:</label>
           <input
             type="number"
             value={numeroSesiones}
             onChange={(e) => setNumeroSesiones(e.target.value)}
             min="1"
+            className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
           />
-        </label>
-        <br />
-        <label>
-          Estado de pago:
+        </div>
+
+        <div>
+          <label className="block font-medium text-gray-700">Estado de Pago:</label>
           <select
             value={estadoPago}
             onChange={(e) => setEstadoPago(e.target.value)}
+            className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
           >
             <option value="Pendiente">Pendiente</option>
             <option value="Pagado">Pagado</option>
           </select>
-        </label>
-        <br />
-        <button type="submit">Agregar Bono</button>
+        </div>
+
+        <button
+          type="submit"
+          className="bg-indigo-500 text-white px-4 py-2 rounded-md hover:bg-indigo-600"
+        >
+          Agregar Bono
+        </button>
       </form>
 
-      {/* Mostrar la lista de bonos */}
-      <h2>Lista de Bonos</h2>
-      <table>
-        <thead>
-          <tr>
-            <th>Cliente</th>
-            <th>Tipo de Bono</th>
-            <th>Número de Sesiones/Horas</th>
-            <th>Estado de Pago</th>
-            <th>Acciones</th> {/* Nueva columna */}
-          </tr>
-        </thead>
-        <tbody>
-          {bonos.map((bono) => {
-            // Obtener el nombre del cliente asociado
-            const cliente = clientes.find((c) => c.id === bono.clienteId);
-            return (
-              <tr key={bono.id}>
-                <td>{cliente ? (
-                <Link to={`/cliente/${cliente.id}`}>{cliente.nombre}</Link> 
-              ):
-              ('Cliente no encontrado')
-              }
-              </td>
-                <td>{bono.tipoBono}</td>
-                <td>{bono.numeroSesiones}</td>
-                <td
-                  style={{
-                    color: bono.estadoPago === "Pagado" ? "green" : "red",
-                  }}
-                >
-                  {bono.estadoPago}
-                </td>
-                <td>
-                  <button onClick={() => eliminarBono(bono.id)}>
-                    Eliminar
-                  </button>
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+      <h2 className="text-xl font-semibold mb-4">Lista de Bonos</h2>
+
+      {/* Tabla de bonos */}
+      <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-md">
+        <table className="min-w-full bg-white">
+          <thead>
+            <tr className="bg-gray-100">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cliente</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo de Bono</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sesiones/Horas</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado de Pago</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {bonos.map((bono) => {
+              const cliente = clientes.find((c) => c.id === bono.clienteId);
+              return (
+                <tr key={bono.id} className="border-b">
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    {cliente ? (
+                      <Link to={`/cliente/${cliente.id}`} className="text-indigo-600 hover:underline">
+                        {cliente.nombre}
+                      </Link>
+                    ) : (
+                      'Cliente no encontrado'
+                    )}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">{bono.tipoBono}</td>
+                  <td className="px-6 py-4 whitespace-nowrap">{bono.numeroSesiones}</td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span
+                      className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                        bono.estadoPago === 'Pagado'
+                          ? 'bg-green-100 text-green-800'
+                          : 'bg-red-100 text-red-800'
+                      }`}
+                    >
+                      {bono.estadoPago}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <button
+                      onClick={() => eliminarBono(bono.id)}
+                      className="text-red-500 hover:text-red-700"
+                    >
+                      <Trash2 className="inline-block h-5 w-5" />
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

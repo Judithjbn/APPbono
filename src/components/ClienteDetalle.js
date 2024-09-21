@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
-import { Link } from 'react-router-dom';
+import { Link } from "react-router-dom";
 import { db } from "../firebaseConfig";
-import { Timestamp } from 'firebase/firestore';
+import { Timestamp } from "firebase/firestore";
 import {
   doc,
   getDoc,
@@ -14,6 +14,7 @@ import {
   addDoc,
 } from "firebase/firestore";
 import Asistencias from "./Asistencias";
+import { ChevronDown, ChevronUp } from "lucide-react"; // iconos de flecha
 
 function ClienteDetalle() {
   const { id } = useParams();
@@ -103,34 +104,64 @@ function ClienteDetalle() {
   const bonosGastados = bonos.filter((bono) => bono.sesionesRestantes === 0);
 
   return (
-    <div>
-      <h1>Detalle del Cliente</h1>
-      <h2>{cliente.nombre}</h2>
-      <p>Tipo de Cliente: {cliente.tipoCliente}</p>
+    <div className="w-full max-w-7xl mx-auto p-4 sm:px-6 lg:px-8">
+      <h1 className="text-xl font-bold text-gray-800 sm:text-2xl">
+        Detalle del Cliente
+      </h1>
+      <h2 className="text-lg text-indigo-600 mt-2 sm:text-xl">
+        {cliente.nombre}
+      </h2>
+      <p className="text-sm text-gray-600 mb-4 sm:text-base">
+        Tipo de Cliente: {cliente.tipoCliente}
+      </p>
 
-      <h2>Bonos Activos</h2>
+      <h2 className="text-lg font-semibold text-gray-800 mt-4 sm:mt-6">
+        Bonos Activos
+      </h2>
 
       {bonosActivos.length > 0 ? (
         bonosActivos.map((bono) => (
-          <div key={bono.id}>
-            <h3>{bono.tipoBono}</h3>
-            <p>Número de Sesiones/Horas: {bono.numeroSesiones}</p>
-            <p>Sesiones/Horas Restantes: {bono.sesionesRestantes}</p>
-            <p style={{ color: bono.estadoPago === "Pagado" ? "green" : "red" }}>
+          <div
+            key={bono.id}
+            className="border rounded-lg p-4 mb-4 bg-white shadow-md w-full sm:w-auto"
+          >
+            <h3 className="text-lg font-semibold">{bono.tipoBono}</h3>
+            <p className="text-gray-600">
+              Número de Sesiones/Horas: {bono.numeroSesiones}
+            </p>
+            <p className="text-gray-600">
+              Sesiones/Horas Restantes: {bono.sesionesRestantes}
+            </p>
+            <p
+              className={`font-semibold mt-2 ${
+                bono.estadoPago === "Pagado" ? "text-green-500" : "text-red-500"
+              }`}
+            >
               Estado de Pago: {bono.estadoPago}
             </p>
-            <button
-              onClick={() => registrarAsistencia(bono.id, bono.sesionesRestantes)}
-            >
-              Registrar Asistencia
-            </button>
-            <button onClick={() => actualizarEstadoPago(bono.id, "Pagado")}>
-              Marcar como Pagado
-            </button>
-            <button onClick={() => actualizarEstadoPago(bono.id, "Pendiente")}>
-              Marcar como Pendiente
-            </button>
-            <h4>Asistencias</h4>
+            <div className="mt-4 space-y-2 sm:space-y-0 sm:space-x-2 flex flex-col sm:flex-row">
+              <button
+                className="bg-indigo-500 text-white px-3 py-2 rounded-md w-full sm:w-auto"
+                onClick={() =>
+                  registrarAsistencia(bono.id, bono.sesionesRestantes)
+                }
+              >
+                Registrar Asistencia
+              </button>
+              <button
+                className="bg-green-500 text-white px-3 py-2 rounded-md w-full sm:w-auto"
+                onClick={() => actualizarEstadoPago(bono.id, "Pagado")}
+              >
+                Marcar como Pagado
+              </button>
+              <button
+                className="bg-red-500 text-white px-3 py-2 rounded-md w-full sm:w-auto"
+                onClick={() => actualizarEstadoPago(bono.id, "Pendiente")}
+              >
+                Marcar como Pendiente
+              </button>
+            </div>
+            <h4 className="text-md font-semibold mt-4">Asistencias</h4>
             <Asistencias
               bonoId={bono.id}
               sesionesRestantes={bono.sesionesRestantes}
@@ -139,47 +170,71 @@ function ClienteDetalle() {
         ))
       ) : (
         <div>
-          <p>No hay bonos activos para este cliente.</p>
-          <Link to="/bonos">Añadir Bono Nuevo</Link>
+          <p className="text-gray-600">
+            No hay bonos activos para este cliente.
+          </p>
+          <Link to="/bonos" className="text-indigo-600 hover:underline">
+            Añadir Bono Nuevo
+          </Link>
         </div>
       )}
 
       {/* Bonos Gastados */}
       {bonosGastados.length > 0 && (
         <>
-          <h2>Bonos Gastados</h2>
+          <h2 className="text-lg font-semibold text-gray-800 mt-6">
+            Bonos Gastados
+          </h2>
           {bonosGastados.map((bono) => {
-            const ultimaFecha = bono.ultimaAsistencia ? bono.ultimaAsistencia.toDate() : null;
+            const ultimaFecha = bono.ultimaAsistencia
+              ? bono.ultimaAsistencia.toDate()
+              : null;
             const estadoPago = bono.estadoPago;
             const titulo = `Bono gastado${
-              ultimaFecha ? ` - Última sesión: ${ultimaFecha.toLocaleDateString()}` : ''
+              ultimaFecha
+                ? ` - Última sesión: ${ultimaFecha.toLocaleDateString()}`
+                : ""
             } - Estado de Pago: ${estadoPago}`;
-            
+
+            // condicionales para el estado de pago
+            const fondoBono =
+              estadoPago === "Pendiente" ? "bg-red-100" : "bg-gray-100";
+
             return (
-              <div key={bono.id}>
+              <div
+                key={bono.id}
+                className={`border rounded-lg p-4 mb-4 shadow-md ${fondoBono}`}
+              >
                 <div
                   onClick={() => toggleBonoDesplegado(bono.id)}
-                  style={{
-                    cursor: 'pointer',
-                    backgroundColor: '#f0f0f0',
-                    padding: '10px',
-                    marginBottom: '5px',
-                  }}
+                  className="cursor-pointer flex items-center justify-between text-black-400 hover:text-indigo-800"
                 >
-                  {titulo}
+                  <span>{titulo}</span>
+                  {bonosDesplegados[bono.id] ? (
+                    <ChevronUp className="h-5 w-5" />
+                  ) : (
+                    <ChevronDown className="h-5 w-5" />
+                  )}
                 </div>
+
                 {bonosDesplegados[bono.id] && (
-                  <div style={{ paddingLeft: '20px' }}>
-                    {/* detalles del bono */}
-                    <h3>{bono.tipoBono}</h3>
+                  <div className="mt-2">
+                    <h3 className="text-md font-semibold">{bono.tipoBono}</h3>
                     <p>Número de Sesiones/Horas: {bono.numeroSesiones}</p>
-                    <label> Estado de Pago: 
-                      <select value={bono.estadoPago} onChange={(e) => actualizarEstadoPago(bono.id, e.target.value)}>
+                    <label className="block mt-2">
+                      Estado de Pago:
+                      <select
+                        value={bono.estadoPago}
+                        onChange={(e) =>
+                          actualizarEstadoPago(bono.id, e.target.value)
+                        }
+                        className="ml-2 bg-white border border-gray-300 rounded-md"
+                      >
                         <option value="Pendiente">Pendiente</option>
                         <option value="Pagado">Pagado</option>
                       </select>
                     </label>
-                    <h4>Asistencias</h4>
+                    <h4 className="text-md font-semibold mt-4">Asistencias</h4>
                     <Asistencias
                       bonoId={bono.id}
                       sesionesRestantes={bono.sesionesRestantes}
