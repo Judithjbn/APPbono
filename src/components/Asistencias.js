@@ -8,24 +8,24 @@ function Asistencias({ bonoId, sesionesRestantes }) {
   const [asistenciaEditando, setAsistenciaEditando] = useState(null);
   const [nuevaFecha, setNuevaFecha] = useState('');
 
-  const obtenerAsistencias = async () => {
-    try {
-      const asistenciasRef = collection(db, 'bonos', bonoId, 'asistencias');
-      const asistenciasSnapshot = await getDocs(asistenciasRef);
-      const listaAsistencias = asistenciasSnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      setAsistencias(listaAsistencias);
-    } catch (e) {
-      console.error('Error al obtener asistencias: ', e);
-    }
-  };
-
   useEffect(() => {
+    const obtenerAsistencias = async () => {
+      try {
+        const asistenciasRef = collection(db, 'bonos', bonoId, 'asistencias');
+        const asistenciasSnapshot = await getDocs(asistenciasRef);
+        const listaAsistencias = asistenciasSnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        setAsistencias(listaAsistencias);
+      } catch (e) {
+        console.error('Error al obtener asistencias: ', e);
+      }
+    };
+  
     obtenerAsistencias();
-  }, [bonoId]);
-
+  }, [bonoId]); // Incluye 'bonoId' si es utilizado dentro de obtenerAsistencias
+  
   const eliminarAsistencia = async (asistenciaId) => {
     try {
       const asistenciaRef = doc(db, 'bonos', bonoId, 'asistencias', asistenciaId);

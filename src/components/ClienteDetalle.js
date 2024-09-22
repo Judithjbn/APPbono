@@ -23,35 +23,36 @@ function ClienteDetalle() {
   const [bonos, setBonos] = useState([]);
   const [bonosDesplegados, setBonosDesplegados] = useState({});
 
-  const obtenerClienteYBonos = async () => {
-    try {
-      const clienteRef = doc(db, "clientes", id);
-      const clienteSnap = await getDoc(clienteRef);
-      if (clienteSnap.exists()) {
-        setCliente({ id: clienteSnap.id, ...clienteSnap.data() });
-      } else {
-        console.log("No se ha encontrado el cliente");
-      }
-
-      // obtener bonos asociados al cliente
-      const bonosQuery = query(
-        collection(db, "bonos"),
-        where("clienteId", "==", id)
-      );
-      const bonosSnapshot = await getDocs(bonosQuery);
-      const listaBonos = bonosSnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      setBonos(listaBonos);
-    } catch (e) {
-      console.error("Error al obtener datos del cliente y bonos: ", e);
-    }
-  };
-
   useEffect(() => {
+    const obtenerClienteYBonos = async () => {
+      try {
+        const clienteRef = doc(db, "clientes", id);
+        const clienteSnap = await getDoc(clienteRef);
+        if (clienteSnap.exists()) {
+          setCliente({ id: clienteSnap.id, ...clienteSnap.data() });
+        } else {
+          console.log("No se ha encontrado el cliente");
+        }
+  
+        // obtener bonos asociados al cliente
+        const bonosQuery = query(
+          collection(db, "bonos"),
+          where("clienteId", "==", id)
+        );
+        const bonosSnapshot = await getDocs(bonosQuery);
+        const listaBonos = bonosSnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        setBonos(listaBonos);
+      } catch (e) {
+        console.error("Error al obtener datos del cliente y bonos: ", e);
+      }
+    };
+  
     obtenerClienteYBonos();
-  }, [id]);
+  }, [id]); // Incluye 'id' si es utilizado dentro de obtenerClienteYBonos
+  
 
   const toggleBonoDesplegado = (bonoId) => {
     setBonosDesplegados((prevState) => ({

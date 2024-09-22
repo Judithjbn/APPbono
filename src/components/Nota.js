@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { doc, getDoc, setDoc, updateDoc, deleteField } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, deleteField } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
 
 function Nota({ clienteId }) {
@@ -7,21 +7,22 @@ function Nota({ clienteId }) {
   const [editando, setEditando] = useState(false);
   const [mensajeError, setMensajeError] = useState('');
 
-  const obtenerNota = async () => {
-    try {
-      const clienteRef = doc(db, 'clientes', clienteId);
-      const clienteSnap = await getDoc(clienteRef);
-      if (clienteSnap.exists() && clienteSnap.data().nota) {
-        setNota(clienteSnap.data().nota);
-      }
-    } catch (e) {
-      console.error('Error al obtener la nota:', e);
-    }
-  };
-
   useEffect(() => {
+    const obtenerNota = async () => {
+      try {
+        const clienteRef = doc(db, 'clientes', clienteId);
+        const clienteSnap = await getDoc(clienteRef);
+        if (clienteSnap.exists() && clienteSnap.data().nota) {
+          setNota(clienteSnap.data().nota);
+        }
+      } catch (e) {
+        console.error('Error al obtener la nota:', e);
+      }
+    };
+  
     obtenerNota();
-  }, [clienteId]);
+  }, [clienteId]); 
+  
 
   const manejarCambio = (event) => {
     const nuevaNota = event.target.value;
