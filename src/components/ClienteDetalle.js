@@ -1,57 +1,37 @@
-import React, { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
-import { Link } from "react-router-dom";
-import { db } from "../firebaseConfig";
-import { Timestamp } from "firebase/firestore";
-import {
-  doc,
-  getDoc,
-  collection,
-  query,
-  where,
-  getDocs,
-  updateDoc,
-  addDoc,
-} from "firebase/firestore";
-import Asistencias from "./Asistencias";
-import Nota from "./Nota";
-import { ChevronDown, ChevronUp } from "lucide-react"; // iconos de flecha
+import React, { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
+import { db } from '../firebaseConfig';
+import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 
 function ClienteDetalle() {
   const { id } = useParams();
   const [cliente, setCliente] = useState(null);
   const [bonos, setBonos] = useState([]);
-  const [bonosDesplegados, setBonosDesplegados] = useState({});
+
+  // Definir la función obtenerClienteYBonos
+  const obtenerClienteYBonos = async () => {
+    try {
+      const clienteRef = doc(db, 'clientes', id);
+      const clienteSnap = await getDoc(clienteRef);
+      if (clienteSnap.exists()) {
+        setCliente({ id: clienteSnap.id, ...clienteSnap.data() });
+      }
+
+      const bonosQuery = query(collection(db, 'bonos'), where('clienteId', '==', id));
+      const bonosSnapshot = await getDocs(bonosQuery);
+      const listaBonos = bonosSnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      setBonos(listaBonos);
+    } catch (e) {
+      console.error('Error al obtener datos del cliente y bonos: ', e);
+    }
+  };
 
   useEffect(() => {
-    const obtenerClienteYBonos = async () => {
-      try {
-        const clienteRef = doc(db, "clientes", id);
-        const clienteSnap = await getDoc(clienteRef);
-        if (clienteSnap.exists()) {
-          setCliente({ id: clienteSnap.id, ...clienteSnap.data() });
-        } else {
-          console.log("No se ha encontrado el cliente");
-        }
-  
-        // obtener bonos asociados al cliente
-        const bonosQuery = query(
-          collection(db, "bonos"),
-          where("clienteId", "==", id)
-        );
-        const bonosSnapshot = await getDocs(bonosQuery);
-        const listaBonos = bonosSnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-        setBonos(listaBonos);
-      } catch (e) {
-        console.error("Error al obtener datos del cliente y bonos: ", e);
-      }
-    };
-  
     obtenerClienteYBonos();
-  }, [id]); // Incluye 'id' si es utilizado dentro de obtenerClienteYBonos
+  }, [id]);
   
 
   const toggleBonoDesplegado = (bonoId) => {

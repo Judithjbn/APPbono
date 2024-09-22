@@ -1,30 +1,30 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../firebaseConfig';
 import { collection, getDocs, deleteDoc, doc, Timestamp, updateDoc } from 'firebase/firestore';
-import { Edit, Trash2 } from 'lucide-react'; // iconos editar y eliminar
 
 function Asistencias({ bonoId, sesionesRestantes }) {
   const [asistencias, setAsistencias] = useState([]);
   const [asistenciaEditando, setAsistenciaEditando] = useState(null);
   const [nuevaFecha, setNuevaFecha] = useState('');
 
+  // Definir la función obtenerAsistencias
+  const obtenerAsistencias = async () => {
+    try {
+      const asistenciasRef = collection(db, 'bonos', bonoId, 'asistencias');
+      const asistenciasSnapshot = await getDocs(asistenciasRef);
+      const listaAsistencias = asistenciasSnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      setAsistencias(listaAsistencias);
+    } catch (e) {
+      console.error('Error al obtener asistencias: ', e);
+    }
+  };
+
   useEffect(() => {
-    const obtenerAsistencias = async () => {
-      try {
-        const asistenciasRef = collection(db, 'bonos', bonoId, 'asistencias');
-        const asistenciasSnapshot = await getDocs(asistenciasRef);
-        const listaAsistencias = asistenciasSnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-        setAsistencias(listaAsistencias);
-      } catch (e) {
-        console.error('Error al obtener asistencias: ', e);
-      }
-    };
-  
     obtenerAsistencias();
-  }, [bonoId]); // Incluye 'bonoId' si es utilizado dentro de obtenerAsistencias
+  }, [bonoId]);
   
   const eliminarAsistencia = async (asistenciaId) => {
     try {
