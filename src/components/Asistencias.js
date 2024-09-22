@@ -1,14 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { db } from '../firebaseConfig';
 import { collection, getDocs, deleteDoc, doc, Timestamp, updateDoc } from 'firebase/firestore';
-import { Edit, Trash2 } from 'lucide-react';  // Importar iconos
 
 function Asistencias({ bonoId, sesionesRestantes }) {
   const [asistencias, setAsistencias] = useState([]);
   const [asistenciaEditando, setAsistenciaEditando] = useState(null);
   const [nuevaFecha, setNuevaFecha] = useState('');
 
-  const obtenerAsistencias = async () => {
+  // Definir la función obtenerAsistencias con useCallback
+  const obtenerAsistencias = useCallback(async () => {
     try {
       const asistenciasRef = collection(db, 'bonos', bonoId, 'asistencias');
       const asistenciasSnapshot = await getDocs(asistenciasRef);
@@ -20,11 +20,11 @@ function Asistencias({ bonoId, sesionesRestantes }) {
     } catch (e) {
       console.error('Error al obtener asistencias: ', e);
     }
-  };
+  }, [bonoId]);  // bonoId es una dependencia
 
   useEffect(() => {
     obtenerAsistencias();
-  }, [bonoId]);
+  }, [obtenerAsistencias]);  // Incluir obtenerAsistencias en el array de dependencias
 
   const eliminarAsistencia = async (asistenciaId) => {
     try {
@@ -112,7 +112,7 @@ function Asistencias({ bonoId, sesionesRestantes }) {
                       }}
                       className="text-blue-500 hover:text-blue-700"
                     >
-                      <Edit className="inline-block h-5 w-5" />
+                      Editar
                     </button>
                   )}
                 </td>
@@ -121,7 +121,7 @@ function Asistencias({ bonoId, sesionesRestantes }) {
                     onClick={() => eliminarAsistencia(asistencia.id)}
                     className="text-red-500 hover:text-red-700"
                   >
-                    <Trash2 className="inline-block h-5 w-5" />
+                    Eliminar
                   </button>
                 </td>
               </tr>

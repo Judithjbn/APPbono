@@ -1,18 +1,18 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom'; // Importar Link
+import React, { useState, useEffect, useCallback } from 'react';
+import { useParams, Link } from 'react-router-dom';
 import { db } from '../firebaseConfig';
-import { doc, getDoc, collection, query, where, getDocs, updateDoc, addDoc, Timestamp } from 'firebase/firestore'; // Importar Firebase
-import Asistencias from './Asistencias'; // Importar Asistencias
-import Nota from './Nota'; // Importar Nota
-import { ChevronUp, ChevronDown } from 'lucide-react'; // Importar iconos
+import { doc, getDoc, collection, query, where, getDocs, updateDoc, addDoc, Timestamp } from 'firebase/firestore';
+import Asistencias from './Asistencias';
+import Nota from './Nota';
+import { ChevronUp, ChevronDown } from 'lucide-react'; 
 
 function ClienteDetalle() {
   const { id } = useParams();
   const [cliente, setCliente] = useState(null);
   const [bonos, setBonos] = useState([]);
-  const [bonosDesplegados, setBonosDesplegados] = useState({}); // Declarar bonoDesplegados
+  const [bonosDesplegados, setBonosDesplegados] = useState({});
 
-  const obtenerClienteYBonos = async () => {
+  const obtenerClienteYBonos = useCallback(async () => {
     try {
       const clienteRef = doc(db, 'clientes', id);
       const clienteSnap = await getDoc(clienteRef);
@@ -30,11 +30,11 @@ function ClienteDetalle() {
     } catch (e) {
       console.error('Error al obtener datos del cliente y bonos: ', e);
     }
-  };
+  }, [id]);
 
   useEffect(() => {
     obtenerClienteYBonos();
-  }, [id]);
+  }, [id, obtenerClienteYBonos]);
 
   const toggleBonoDesplegado = (bonoId) => {
     setBonosDesplegados((prevState) => ({
@@ -175,4 +175,3 @@ function ClienteDetalle() {
 }
 
 export default ClienteDetalle;
-  
