@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../firebaseConfig';
 import { collection, getDocs, deleteDoc, doc, Timestamp, updateDoc } from 'firebase/firestore';
+import { Edit, Trash2 } from 'lucide-react';  // Importar iconos
 
 function Asistencias({ bonoId, sesionesRestantes }) {
   const [asistencias, setAsistencias] = useState([]);
   const [asistenciaEditando, setAsistenciaEditando] = useState(null);
   const [nuevaFecha, setNuevaFecha] = useState('');
 
-  // Definir la función obtenerAsistencias
   const obtenerAsistencias = async () => {
     try {
       const asistenciasRef = collection(db, 'bonos', bonoId, 'asistencias');
@@ -25,7 +25,7 @@ function Asistencias({ bonoId, sesionesRestantes }) {
   useEffect(() => {
     obtenerAsistencias();
   }, [bonoId]);
-  
+
   const eliminarAsistencia = async (asistenciaId) => {
     try {
       const asistenciaRef = doc(db, 'bonos', bonoId, 'asistencias', asistenciaId);
