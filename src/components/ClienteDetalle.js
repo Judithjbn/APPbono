@@ -14,6 +14,7 @@ import {
   addDoc,
 } from "firebase/firestore";
 import Asistencias from "./Asistencias";
+import Nota from "./Nota";
 import { ChevronDown, ChevronUp } from "lucide-react"; // iconos de flecha
 
 function ClienteDetalle() {
@@ -114,6 +115,7 @@ function ClienteDetalle() {
       <p className="text-sm text-gray-600 mb-4 sm:text-base">
         Tipo de Cliente: {cliente.tipoCliente}
       </p>
+      <Nota clienteId={cliente.id} />
 
       <h2 className="text-lg font-semibold text-gray-800 mt-4 sm:mt-6">
         Bonos Activos
