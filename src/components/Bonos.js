@@ -70,7 +70,8 @@ function Bonos() {
         id: doc.id,
         ...doc.data(),
       }));
-      setBonos(listaBonos);
+      const bonosActivos = listaBonos.filter((bono) => bono.sesionesRestantes > 0);
+      setBonos(bonosActivos);
     } catch (e) {
       console.error('Error al obtener bonos: ', e);
     }
