@@ -25,7 +25,6 @@ function ClienteDetalle() {
 
   const obtenerClienteYBonos = async () => {
     try {
-      // obtener datos del cliente
       const clienteRef = doc(db, "clientes", id);
       const clienteSnap = await getDoc(clienteRef);
       if (clienteSnap.exists()) {
@@ -54,7 +53,6 @@ function ClienteDetalle() {
     obtenerClienteYBonos();
   }, [id]);
 
-  // alternar los bonos desplegados
   const toggleBonoDesplegado = (bonoId) => {
     setBonosDesplegados((prevState) => ({
       ...prevState,
@@ -106,16 +104,26 @@ function ClienteDetalle() {
 
   return (
     <div className="w-full max-w-7xl mx-auto p-4 sm:px-6 lg:px-8">
-      <h1 className="text-xl font-bold text-gray-800 sm:text-2xl">
-        Detalle del Cliente
-      </h1>
-      <h2 className="text-lg text-indigo-600 mt-2 sm:text-xl">
-        {cliente.nombre}
-      </h2>
-      <p className="text-sm text-gray-600 mb-4 sm:text-base">
-        Tipo de Cliente: {cliente.tipoCliente}
+    <h1 className="text-xl font-bold text-gray-800 sm:text-2xl">
+      Detalle del Cliente
+    </h1>
+    <h2 className="text-lg text-indigo-600 mt-2 sm:text-xl">
+      {cliente.nombre}
+    </h2>
+    <p className="text-sm text-gray-600 mb-4 sm:text-base">
+      Tipo de Cliente: {cliente.tipoCliente}
+    </p>
+
+    {/* Mostrar entrenadores asignados al cliente */}
+    {cliente.entrenadores && cliente.entrenadores.length > 0 ? (
+      <p className="text-sm text-gray-600">
+        Entrenador/Fisio: {cliente.entrenadores.join(" / ")}
       </p>
-      <Nota clienteId={cliente.id} />
+    ) : (
+      <p className="text-sm text-gray-600">Entrenador/Fisio: Ninguno</p>
+    )}
+
+    <Nota clienteId={cliente.id} />
 
       <h2 className="text-lg font-semibold text-gray-800 mt-4 sm:mt-6">
         Bonos Activos
@@ -198,7 +206,6 @@ function ClienteDetalle() {
                 : ""
             } - Estado de Pago: ${estadoPago}`;
 
-            // condicionales para el estado de pago
             const fondoBono =
               estadoPago === "Pendiente" ? "bg-red-100" : "bg-gray-100";
 
@@ -217,39 +224,40 @@ function ClienteDetalle() {
                   ) : (
                     <ChevronDown className="h-5 w-5" />
                   )}
-                </div>
-
-                {bonosDesplegados[bono.id] && (
-                  <div className="mt-2">
-                    <h3 className="text-md font-semibold">{bono.tipoBono}</h3>
-                    <p>Número de Sesiones/Horas: {bono.numeroSesiones}</p>
-                    <label className="block mt-2">
-                      Estado de Pago:
-                      <select
-                        value={bono.estadoPago}
-                        onChange={(e) =>
-                          actualizarEstadoPago(bono.id, e.target.value)
-                        }
-                        className="ml-2 bg-white border border-gray-300 rounded-md"
-                      >
-                        <option value="Pendiente">Pendiente</option>
-                        <option value="Pagado">Pagado</option>
-                      </select>
-                    </label>
-                    <h4 className="text-md font-semibold mt-4">Asistencias</h4>
-                    <Asistencias
-                      bonoId={bono.id}
-                      sesionesRestantes={bono.sesionesRestantes}
-                    />
                   </div>
-                )}
-              </div>
-            );
-          })}
-        </>
-      )}
-    </div>
-  );
-}
-
-export default ClienteDetalle;
+  
+                  {bonosDesplegados[bono.id] && (
+                    <div className="mt-2">
+                      <h3 className="text-md font-semibold">{bono.tipoBono}</h3>
+                      <p>Número de Sesiones/Horas: {bono.numeroSesiones}</p>
+                      <label className="block mt-2">
+                        Estado de Pago:
+                        <select
+                          value={bono.estadoPago}
+                          onChange={(e) =>
+                            actualizarEstadoPago(bono.id, e.target.value)
+                          }
+                          className="ml-2 bg-white border border-gray-300 rounded-md"
+                        >
+                          <option value="Pendiente">Pendiente</option>
+                          <option value="Pagado">Pagado</option>
+                        </select>
+                      </label>
+                      <h4 className="text-md font-semibold mt-4">Asistencias</h4>
+                      <Asistencias
+                        bonoId={bono.id}
+                        sesionesRestantes={bono.sesionesRestantes}
+                      />
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </>
+        )}
+      </div>
+    );
+  }
+  
+  export default ClienteDetalle;
+  

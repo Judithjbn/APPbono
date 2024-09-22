@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../firebaseConfig';
-import { collection, addDoc, getDocs, deleteDoc, doc } from 'firebase/firestore';
+import { collection, addDoc, getDocs, deleteDoc, doc, updateDoc } from 'firebase/firestore'; // Importar updateDoc
 import { Link } from 'react-router-dom';
 import { Trash2 } from 'lucide-react'; // icono papelera
 
@@ -10,7 +10,28 @@ function Bonos() {
   const [tipoBono, setTipoBono] = useState('Alquiler de espacio');
   const [numeroSesiones, setNumeroSesiones] = useState(1);
   const [estadoPago, setEstadoPago] = useState('Pendiente');
+  const [entrenadores, setEntrenadores] = useState([]); 
+  const [entrenadoresSeleccionados, setEntrenadoresSeleccionados] = useState([]);
   const [bonos, setBonos] = useState([]);
+
+  const obtenerClientes = async () => {
+    try {
+      const querySnapshot = await getDocs(collection(db, 'clientes'));
+      const listaClientes = querySnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      setClientes(listaClientes);
+      setEntrenadores(listaClientes.filter((cliente) => cliente.tipoCliente === 'Profesional')); 
+    } catch (e) {
+      console.error('Error al obtener clientes: ', e);
+    }
+  };
+
+  useEffect(() => {
+    obtenerClientes();
+    obtenerBonos();
+  }, []);
 
   const agregarBono = async (e) => {
     e.preventDefault();
@@ -21,41 +42,26 @@ function Bonos() {
         numeroSesiones,
         sesionesRestantes: numeroSesiones,
         estadoPago,
+        entrenadores: entrenadoresSeleccionados, 
         fechaCreacion: new Date(),
       });
-
-      // reiniciar el formulario
+  
+      const clienteRef = doc(db, 'clientes', clienteSeleccionado);
+      await updateDoc(clienteRef, {
+        entrenadores: entrenadoresSeleccionados, // guardar entrenadores en el perfil del cliente
+      });
+  
       setTipoBono('Alquiler de espacio');
       setNumeroSesiones(1);
       setEstadoPago('Pendiente');
+      setEntrenadoresSeleccionados([]);
       alert('Bono agregado correctamente');
       obtenerBonos();
     } catch (e) {
       console.error('Error al agregar bono: ', e);
     }
   };
-
-  // obtener los clientes desde Firestore
-  useEffect(() => {
-    const obtenerClientes = async () => {
-      try {
-        const querySnapshot = await getDocs(collection(db, 'clientes'));
-        const listaClientes = querySnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-        setClientes(listaClientes);
-        if (listaClientes.length > 0) {
-          setClienteSeleccionado(listaClientes[0].id);
-        }
-      } catch (e) {
-        console.error('Error al obtener clientes: ', e);
-      }
-    };
-
-    obtenerClientes();
-    obtenerBonos();
-  }, []);
+  
 
   const obtenerBonos = async () => {
     try {
@@ -79,11 +85,16 @@ function Bonos() {
     }
   };
 
+  const manejarCambioEntrenadores = (e) => {
+    const opcionesSeleccionadas = Array.from(e.target.selectedOptions, (option) => option.value);
+    setEntrenadoresSeleccionados(opcionesSeleccionadas);
+  };
+
   return (
     <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <h1 className="text-2xl font-bold mb-4">Gestión de Bonos</h1>
 
-      {/* Form para agregar bonos */}
+      {/* form para agregar bonos */}
       <form onSubmit={agregarBono} className="space-y-4 mb-8">
         <div>
           <label className="block font-medium text-gray-700">Cliente:</label>
@@ -111,6 +122,24 @@ function Bonos() {
             <option value="Bono de sesiones">Bono de sesiones</option>
           </select>
         </div>
+
+        {clientes.find(cliente => cliente.id === clienteSeleccionado && cliente.tipoCliente === 'Cliente del Centro') && (
+          <div>
+            <label className="block font-medium text-gray-700">Entrenador/Fisio:</label>
+            <select
+              multiple
+              value={entrenadoresSeleccionados}
+              onChange={manejarCambioEntrenadores}
+              className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+            >
+              {entrenadores.map((entrenador) => (
+                <option key={entrenador.id} value={entrenador.nombre}>
+                  {entrenador.nombre}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
 
         <div>
           <label className="block font-medium text-gray-700">Número de Sesiones u Horas:</label>
@@ -203,3 +232,4 @@ function Bonos() {
 }
 
 export default Bonos;
+
