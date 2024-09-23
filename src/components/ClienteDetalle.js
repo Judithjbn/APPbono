@@ -105,6 +105,7 @@ function ClienteDetalle() {
         bonosActivos.map((bono) => (
           <div key={bono.id} className="border rounded-lg p-4 mb-4 bg-white shadow-md w-full sm:w-auto">
             <h3 className="text-lg font-semibold">{bono.tipoBono}</h3>
+            <p className="text-gray-600">Duración: {bono.duracionSesion} minutos</p> 
             <p className="text-gray-600">Número de Sesiones/Horas: {bono.numeroSesiones}</p>
             <p className="text-gray-600">Sesiones/Horas Restantes: {bono.sesionesRestantes}</p>
             <p className={`font-semibold mt-2 ${bono.estadoPago === "Pagado" ? "text-green-500" : "text-red-500"}`}>
