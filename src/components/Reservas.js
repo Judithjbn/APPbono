@@ -10,6 +10,7 @@ import {
   getDoc,
   updateDoc,
   doc,
+  deleteDoc,
 } from 'firebase/firestore';
 
 import { Calendar, momentLocalizer } from 'react-big-calendar';
@@ -124,11 +125,26 @@ function Reservas() {
   const agregarReserva = async (e) => {
     e.preventDefault();
     try {
+      if (!clienteSeleccionado) {
+        alert('Por favor, selecciona un cliente.');
+        return;
+      }
+
+      if (!espacioSeleccionado) {
+        alert('Por favor, selecciona un espacio.');
+        return;
+      }
+
       const fechaInicioTimestamp = Timestamp.fromDate(new Date(fechaInicio));
       const fechaFinTimestamp = Timestamp.fromDate(new Date(fechaFin));
 
       if (fechaFinTimestamp <= fechaInicioTimestamp) {
         alert('La fecha de fin debe ser posterior a la fecha de inicio.');
+        return;
+      }
+
+      if (fechaInicioTimestamp <= Timestamp.now()) {
+        alert('La fecha de inicio debe ser posterior al momento actual.');
         return;
       }
 
@@ -150,6 +166,18 @@ function Reservas() {
         return;
       }
 
+      if (bonoSeleccionado) {
+        const bonoRef = doc(db, 'bonos', bonoSeleccionado);
+        const bonoDoc = await getDoc(bonoRef);
+        if (bonoDoc.exists()) {
+          const sesionesRestantes = bonoDoc.data().sesionesRestantes;
+          if (sesionesRestantes <= 0) {
+            alert('El bono seleccionado no tiene sesiones restantes.');
+            return;
+          }
+        }
+      }
+
       await addDoc(collection(db, 'reservas'), {
         clienteId: clienteSeleccionado,
         espacioId: espacioSeleccionado,
@@ -166,13 +194,20 @@ function Reservas() {
       setFechaInicio('');
       setFechaFin('');
       setBonoSeleccionado('');
-      obtenerReservas();
+      setBonosCliente([]);
+      obtenerReservas(); // Actualizar la lista de reservas
     } catch (error) {
       console.error('Error al crear reserva:', error);
+      alert('Ocurrió un error al crear la reserva.');
     }
   };
 
   const registrarAsistencia = async (event) => {
+    if (event.asistenciaRegistrada) {
+      alert('La asistencia ya ha sido registrada para esta reserva.');
+      return;
+    }
+
     const confirmacion = window.confirm('¿Deseas registrar la asistencia de esta reserva?');
     if (confirmacion) {
       try {
@@ -180,15 +215,18 @@ function Reservas() {
           asistenciaRegistrada: true,
         });
 
-        //si hay un bono asociado, decrementar sesiones restantes
         if (event.bonoId) {
           const bonoRef = doc(db, 'bonos', event.bonoId);
           const bonoDoc = await getDoc(bonoRef);
           if (bonoDoc.exists()) {
             const sesionesRestantes = bonoDoc.data().sesionesRestantes;
-            await updateDoc(bonoRef, {
-              sesionesRestantes: sesionesRestantes - 1,
-            });
+            if (sesionesRestantes > 0) {
+              await updateDoc(bonoRef, {
+                sesionesRestantes: sesionesRestantes - 1,
+              });
+            } else {
+              alert('El bono no tiene sesiones restantes.');
+            }
           }
         }
 
@@ -196,7 +234,34 @@ function Reservas() {
         obtenerReservas();
       } catch (error) {
         console.error('Error al registrar asistencia:', error);
+        alert('Ocurrió un error al registrar la asistencia.');
       }
+    }
+  };
+
+  const cancelarReserva = async (event) => {
+    const confirmacion = window.confirm('¿Estás seguro de que deseas cancelar esta reserva?');
+    if (confirmacion) {
+      try {
+        await deleteDoc(doc(db, 'reservas', event.id));
+        alert('Reserva cancelada');
+        obtenerReservas();
+      } catch (error) {
+        console.error('Error al cancelar reserva:', error);
+        alert('Ocurrió un error al cancelar la reserva.');
+      }
+    }
+  };
+
+  const manejarSeleccionEvento = (event) => {
+    const opciones = window.prompt(
+      `Selecciona una opción para la reserva:\n1. Registrar Asistencia\n2. Cancelar Reserva\n3. Cerrar`
+    );
+
+    if (opciones === '1') {
+      registrarAsistencia(event);
+    } else if (opciones === '2') {
+      cancelarReserva(event);
     }
   };
 
@@ -287,6 +352,17 @@ function Reservas() {
         </button>
       </form>
 
+      <div className="flex space-x-4 my-4">
+        <div className="flex items-center">
+          <div className="w-4 h-4 bg-green-300 mr-2"></div>
+          <span>Asistencia registrada</span>
+        </div>
+        <div className="flex items-center">
+          <div className="w-4 h-4 bg-red-300 mr-2"></div>
+          <span>Asistencia pendiente</span>
+        </div>
+      </div>
+
       <div style={{ height: '500px' }}>
         <Calendar
           localizer={localizer}
@@ -298,9 +374,10 @@ function Reservas() {
           step={30}
           timeslots={2}
           selectable
-          onSelectEvent={(event) => registrarAsistencia(event)}
-          onSelectSlot={(slotInfo) => {
-            console.log('Slot seleccionado:', slotInfo);
+          onSelectEvent={manejarSeleccionEvento}
+          eventPropGetter={(event) => {
+            let backgroundColor = event.asistenciaRegistrada ? '#6EE7B7' : '#FCA5A5'; 
+            return { style: { backgroundColor } };
           }}
         />
       </div>

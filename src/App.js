@@ -6,12 +6,13 @@ import Clientes from './components/Clientes';
 import Bonos from './components/Bonos';
 import ClienteDetalle from './components/ClienteDetalle';
 import Reservas from './components/Reservas';
-import { Home as HomeIcon, Users, Ticket } from 'lucide-react'; // Importamos los íconos
+import { Home as HomeIcon, Users, Ticket, Calendar } from 'lucide-react';
 
 const navigation = [
   { name: 'Inicio', href: '/', icon: HomeIcon },
   { name: 'Clientes', href: '/clientes', icon: Users },
   { name: 'Bonos', href: '/bonos', icon: Ticket },
+  { name: 'Reservas', href: '/reservas', icon: Calendar },
 ];
 
 function Navigation() {
