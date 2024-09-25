@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { db } from '../firebaseConfig';
 import {
   collection,
@@ -31,20 +31,7 @@ function Reservas() {
   const [bonosCliente, setBonosCliente] = useState([]);
   const [bonoSeleccionado, setBonoSeleccionado] = useState('');
 
-  useEffect(() => {
-    obtenerClientes();
-    obtenerEspacios();
-    obtenerReservas();
-  }, []);
-
-  useEffect(() => {
-    generarEventos();
-  }, [reservas, clientes, espacios]);
-
-  useEffect(() => {
-    obtenerBonosCliente();
-  }, [clienteSeleccionado]);
-
+  // Definimos las funciones antes de usarlas en useEffect
   const obtenerClientes = async () => {
     try {
       const querySnapshot = await getDocs(collection(db, 'clientes'));
@@ -84,26 +71,15 @@ function Reservas() {
     }
   };
 
-  const obtenerBonosCliente = async () => {
-    if (clienteSeleccionado) {
-      try {
-        const bonosRef = collection(db, 'bonos');
-        const q = query(bonosRef, where('clienteId', '==', clienteSeleccionado));
-        const querySnapshot = await getDocs(q);
-        const listaBonos = querySnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-        setBonosCliente(listaBonos);
-      } catch (error) {
-        console.error('Error al obtener bonos del cliente:', error);
-      }
-    } else {
-      setBonosCliente([]);
-    }
-  };
+  // useEffect inicial para cargar clientes, espacios y reservas
+  useEffect(() => {
+    obtenerClientes();
+    obtenerEspacios();
+    obtenerReservas();
+  }, []);
 
-  const generarEventos = () => {
+  // Memorizar generarEventos para incluirlo en las dependencias
+  const generarEventos = useCallback(() => {
     const eventosReservas = reservas.map((reserva) => {
       const cliente = clientes.find((c) => c.id === reserva.clienteId);
       const espacio = espacios.find((e) => e.id === reserva.espacioId);
@@ -120,8 +96,37 @@ function Reservas() {
       };
     });
     setEventos(eventosReservas);
-  };
+  }, [reservas, clientes, espacios]);
 
+  useEffect(() => {
+    generarEventos();
+  }, [generarEventos]); // Incluimos generarEventos en las dependencias
+
+  // Memorizar obtenerBonosCliente
+  const obtenerBonosCliente = useCallback(async () => {
+    if (clienteSeleccionado) {
+      try {
+        const bonosRef = collection(db, 'bonos');
+        const q = query(bonosRef, where('clienteId', '==', clienteSeleccionado));
+        const querySnapshot = await getDocs(q);
+        const listaBonos = querySnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        setBonosCliente(listaBonos);
+      } catch (error) {
+        console.error('Error al obtener bonos del cliente:', error);
+      }
+    } else {
+      setBonosCliente([]);
+    }
+  }, [clienteSeleccionado]);
+
+  useEffect(() => {
+    obtenerBonosCliente();
+  }, [obtenerBonosCliente]); // Incluimos obtenerBonosCliente en las dependencias
+
+  // Función para agregar una reserva
   const agregarReserva = async (e) => {
     e.preventDefault();
     try {
@@ -202,6 +207,7 @@ function Reservas() {
     }
   };
 
+  // Función para registrar asistencia y actualizar bono
   const registrarAsistencia = async (event) => {
     if (event.asistenciaRegistrada) {
       alert('La asistencia ya ha sido registrada para esta reserva.');
@@ -239,6 +245,7 @@ function Reservas() {
     }
   };
 
+  // Función para cancelar una reserva
   const cancelarReserva = async (event) => {
     const confirmacion = window.confirm('¿Estás seguro de que deseas cancelar esta reserva?');
     if (confirmacion) {
@@ -253,6 +260,7 @@ function Reservas() {
     }
   };
 
+  // Manejar la selección de un evento en el calendario
   const manejarSeleccionEvento = (event) => {
     const opciones = window.prompt(
       `Selecciona una opción para la reserva:\n1. Registrar Asistencia\n2. Cancelar Reserva\n3. Cerrar`
@@ -269,7 +277,9 @@ function Reservas() {
     <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <h1 className="text-2xl font-bold mb-4">Reservas</h1>
 
+      {/* Formulario para agregar reserva */}
       <form onSubmit={agregarReserva} className="space-y-4 mb-8">
+        {/* Selección de cliente */}
         <div>
           <label className="block font-medium text-gray-700">Cliente:</label>
           <select
@@ -287,6 +297,7 @@ function Reservas() {
           </select>
         </div>
 
+        {/* Selección de espacio */}
         <div>
           <label className="block font-medium text-gray-700">Espacio:</label>
           <select
@@ -304,6 +315,7 @@ function Reservas() {
           </select>
         </div>
 
+        {/* Selección de bono si el cliente tiene bonos */}
         {bonosCliente.length > 0 && (
           <div>
             <label className="block font-medium text-gray-700">Bono:</label>
@@ -322,6 +334,7 @@ function Reservas() {
           </div>
         )}
 
+        {/* Fecha y hora de inicio */}
         <div>
           <label className="block font-medium text-gray-700">Fecha y Hora de Inicio:</label>
           <input
@@ -333,6 +346,7 @@ function Reservas() {
           />
         </div>
 
+        {/* Fecha y hora de fin */}
         <div>
           <label className="block font-medium text-gray-700">Fecha y Hora de Fin:</label>
           <input
@@ -344,6 +358,7 @@ function Reservas() {
           />
         </div>
 
+        {/* Botón para agregar reserva */}
         <button
           type="submit"
           className="bg-indigo-500 text-white px-4 py-2 rounded-md hover:bg-indigo-600"
@@ -352,6 +367,7 @@ function Reservas() {
         </button>
       </form>
 
+      {/* Leyenda de colores */}
       <div className="flex space-x-4 my-4">
         <div className="flex items-center">
           <div className="w-4 h-4 bg-green-300 mr-2"></div>
@@ -363,6 +379,7 @@ function Reservas() {
         </div>
       </div>
 
+      {/* Calendario para mostrar reservas */}
       <div style={{ height: '500px' }}>
         <Calendar
           localizer={localizer}
@@ -376,7 +393,7 @@ function Reservas() {
           selectable
           onSelectEvent={manejarSeleccionEvento}
           eventPropGetter={(event) => {
-            let backgroundColor = event.asistenciaRegistrada ? '#6EE7B7' : '#FCA5A5'; 
+            let backgroundColor = event.asistenciaRegistrada ? '#6EE7B7' : '#FCA5A5';
             return { style: { backgroundColor } };
           }}
         />
