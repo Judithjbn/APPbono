@@ -5,6 +5,7 @@ import Home from './components/Home';
 import Clientes from './components/Clientes';
 import Bonos from './components/Bonos';
 import ClienteDetalle from './components/ClienteDetalle';
+import Reservas from './components/Reservas';
 import { Home as HomeIcon, Users, Ticket } from 'lucide-react'; // Importamos los íconos
 
 const navigation = [
@@ -55,6 +56,7 @@ function App() {
         <Route path="/clientes" element={<Clientes />} />
         <Route path="/bonos" element={<Bonos />} />
         <Route path="/cliente/:id" element={<ClienteDetalle />} />
+        <Route path="/reservas" element={<Reservas />} />
       </Routes>
     </Router>
   );
