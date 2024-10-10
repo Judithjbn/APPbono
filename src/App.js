@@ -1,5 +1,6 @@
-import './index.css'; // O el nombre de tu archivo CSS principal
+import './index.css'; 
 import React from 'react';
+import { ProveedorCliente } from './ContextoCliente';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
 import Home from './components/Home';
 import Clientes from './components/Clientes';
@@ -22,7 +23,7 @@ function Navigation() {
     <nav className="bg-white shadow-md">
       <div className="flex justify-between items-center h-16 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <img
-          src="https://tailwindui.com/img/logos/mark.svg?color=indigo&shade=600"
+          src="public/logo.png"
           alt="logo"
           className="h-8 mr-4"
         />
@@ -50,16 +51,18 @@ function Navigation() {
 
 function App() {
   return (
-    <Router>
-      <Navigation />
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/clientes" element={<Clientes />} />
-        <Route path="/bonos" element={<Bonos />} />
-        <Route path="/cliente/:id" element={<ClienteDetalle />} />
-        <Route path="/reservas" element={<Reservas />} />
-      </Routes>
-    </Router>
+    <ProveedorCliente>
+      <Router>
+        <Navigation />
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/clientes" element={<Clientes />} />
+          <Route path="/bonos" element={<Bonos />} />
+          <Route path="/cliente/:id" element={<ClienteDetalle />} />
+          <Route path="/reservas" element={<Reservas />} />
+        </Routes>
+      </Router>
+    </ProveedorCliente>
   );
 }
 

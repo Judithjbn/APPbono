@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import React, { useState, useEffect, useCallback, useContext } from 'react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { db } from '../firebaseConfig';
 import {
   doc,
@@ -15,9 +15,12 @@ import {
 import Asistencias from './Asistencias';
 import Nota from './Nota';
 import { ChevronUp, ChevronDown } from 'lucide-react';
+import { ContextoCliente } from '../ContextoCliente'; 
 
 function ClienteDetalle() {
   const { id } = useParams();
+  const navigate = useNavigate();
+  const { setClienteSeleccionado } = useContext(ContextoCliente);
   const [cliente, setCliente] = useState(null);
   const [bonos, setBonos] = useState([]);
   const [bonosDesplegados, setBonosDesplegados] = useState({});
@@ -119,6 +122,12 @@ function ClienteDetalle() {
     }
   };
 
+  // Función para ir a Reservas y establecer el cliente seleccionado
+  const irAReservas = () => {
+    setClienteSeleccionado(id);
+    navigate('/reservas');
+  };
+
   if (!cliente) {
     return <div>Cargando...</div>;
   }
@@ -144,7 +153,15 @@ function ClienteDetalle() {
 
       <Nota clienteId={cliente.id} />
 
-      {/* mostrar reservas del cliente */}
+      {/* Botón para ir a Reservas */}
+      <button
+        onClick={irAReservas}
+        className="bg-indigo-500 text-white px-4 py-2 rounded-md mt-4 hover:bg-indigo-600"
+      >
+        Crear Reserva
+      </button>
+
+      {/* Mostrar reservas del cliente */}
       <h2 className="text-lg font-semibold text-gray-800 mt-4 sm:mt-6">Reservas</h2>
 
       {reservasCliente.length > 0 ? (
@@ -172,6 +189,7 @@ function ClienteDetalle() {
         <p className="text-gray-600">No hay reservas para este cliente.</p>
       )}
 
+      {/* Bonos Activos */}
       <h2 className="text-lg font-semibold text-gray-800 mt-4 sm:mt-6">Bonos Activos</h2>
 
       {bonosActivos.length > 0 ? (

@@ -1,4 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react';
+// src/components/Reservas.js
+
+import React, { useState, useEffect, useCallback, useContext } from 'react';
 import { db } from '../firebaseConfig';
 import {
   collection,
@@ -14,24 +16,36 @@ import {
 } from 'firebase/firestore';
 
 import { Calendar, momentLocalizer } from 'react-big-calendar';
+import withDragAndDrop from 'react-big-calendar/lib/addons/dragAndDrop';
+import { DndProvider } from 'react-dnd';
+import { HTML5Backend } from 'react-dnd-html5-backend';
+import 'react-big-calendar/lib/addons/dragAndDrop/styles.css';
 import moment from 'moment';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 
+import { ContextoCliente } from '../ContextoCliente'; // Importamos el contexto
+
 const localizer = momentLocalizer(moment);
+const DragAndDropCalendar = withDragAndDrop(Calendar);
 
 function Reservas() {
+  const { clienteSeleccionado, setClienteSeleccionado } = useContext(ContextoCliente);
   const [clientes, setClientes] = useState([]);
   const [espacios, setEspacios] = useState([]);
-  const [clienteSeleccionado, setClienteSeleccionado] = useState('');
   const [espacioSeleccionado, setEspacioSeleccionado] = useState('');
-  const [fechaInicio, setFechaInicio] = useState('');
-  const [fechaFin, setFechaFin] = useState('');
   const [reservas, setReservas] = useState([]);
   const [eventos, setEventos] = useState([]);
   const [bonosCliente, setBonosCliente] = useState([]);
   const [bonoSeleccionado, setBonoSeleccionado] = useState('');
 
-  // Definimos las funciones antes de usarlas en useEffect
+  // Obtener clientes, espacios y reservas al montar el componente
+  useEffect(() => {
+    obtenerClientes();
+    obtenerEspacios();
+    obtenerReservas();
+  }, []);
+
+  // Obtener clientes
   const obtenerClientes = async () => {
     try {
       const querySnapshot = await getDocs(collection(db, 'clientes'));
@@ -45,6 +59,7 @@ function Reservas() {
     }
   };
 
+  // Obtener espacios
   const obtenerEspacios = async () => {
     try {
       const querySnapshot = await getDocs(collection(db, 'espacios'));
@@ -58,51 +73,57 @@ function Reservas() {
     }
   };
 
+  // Obtener reservas
   const obtenerReservas = async () => {
     try {
       const querySnapshot = await getDocs(collection(db, 'reservas'));
-      const listaReservas = querySnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
+      const listaReservas = querySnapshot.docs.map((doc) => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          ...data,
+        };
+      });
+      console.log('Reservas obtenidas:', listaReservas);
       setReservas(listaReservas);
     } catch (e) {
       console.error('Error al obtener reservas:', e);
     }
   };
 
-  // useEffect inicial para cargar clientes, espacios y reservas
-  useEffect(() => {
-    obtenerClientes();
-    obtenerEspacios();
-    obtenerReservas();
-  }, []);
-
-  // Memorizar generarEventos para incluirlo en las dependencias
+  // Generar eventos para el calendario
   const generarEventos = useCallback(() => {
-    const eventosReservas = reservas.map((reserva) => {
-      const cliente = clientes.find((c) => c.id === reserva.clienteId);
-      const espacio = espacios.find((e) => e.id === reserva.espacioId);
+    if (reservas.length > 0 && clientes.length > 0 && espacios.length > 0) {
+      const eventosReservas = reservas.map((reserva) => {
+        const cliente = clientes.find((c) => c.id === reserva.clienteId);
+        const espacio = espacios.find((e) => e.id === reserva.espacioId);
 
-      return {
-        id: reserva.id,
-        title: `${cliente ? cliente.nombre : 'Cliente desconocido'} - ${
-          espacio ? espacio.nombre : 'Espacio desconocido'
-        }`,
-        start: reserva.fechaInicio.toDate(),
-        end: reserva.fechaFin.toDate(),
-        bonoId: reserva.bonoId,
-        asistenciaRegistrada: reserva.asistenciaRegistrada,
-      };
-    });
-    setEventos(eventosReservas);
+        if (!cliente || !espacio) {
+          console.warn('Cliente o espacio no encontrado para la reserva:', reserva);
+          return null;
+        }
+
+        return {
+          id: reserva.id,
+          title: `${cliente.nombre} - ${espacio.nombre}`,
+          start: reserva.fechaInicio.toDate(),
+          end: reserva.fechaFin.toDate(),
+          bonoId: reserva.bonoId,
+          asistenciaRegistrada: reserva.asistenciaRegistrada,
+          clienteId: reserva.clienteId,
+          espacioId: reserva.espacioId,
+        };
+      }).filter(Boolean); // Eliminar elementos nulos
+      console.log('Eventos generados:', eventosReservas);
+      setEventos(eventosReservas);
+    }
   }, [reservas, clientes, espacios]);
 
   useEffect(() => {
     generarEventos();
-  }, [generarEventos]); // Incluimos generarEventos en las dependencias
+  }, [reservas, clientes, espacios, generarEventos]);
 
-  // Memorizar obtenerBonosCliente
+  // Obtener bonos del cliente seleccionado
   const obtenerBonosCliente = useCallback(async () => {
     if (clienteSeleccionado) {
       try {
@@ -124,46 +145,121 @@ function Reservas() {
 
   useEffect(() => {
     obtenerBonosCliente();
-  }, [obtenerBonosCliente]); // Incluimos obtenerBonosCliente en las dependencias
+  }, [clienteSeleccionado, obtenerBonosCliente]);
 
-  // Función para agregar una reserva
-  const agregarReserva = async (e) => {
-    e.preventDefault();
+  // Función para agregar una reserva directamente (desde el calendario)
+  const agregarReservaDirecta = async (fechaInicioTimestamp, fechaFinTimestamp) => {
+    if (!clienteSeleccionado) {
+      alert('Por favor, selecciona un cliente.');
+      return;
+    }
+
+    if (!espacioSeleccionado) {
+      alert('Por favor, selecciona un espacio.');
+      return;
+    }
+
+    // Verificar que las fechas sean correctas
+    if (fechaFinTimestamp <= fechaInicioTimestamp) {
+      alert('La fecha de fin debe ser posterior a la fecha de inicio.');
+      return;
+    }
+
+    if (fechaInicioTimestamp <= Timestamp.now()) {
+      alert('La fecha de inicio debe ser posterior al momento actual.');
+      return;
+    }
+
+    // Verificar disponibilidad del espacio
+    const reservasRef = collection(db, 'reservas');
+    const q = query(
+      reservasRef,
+      where('espacioId', '==', espacioSeleccionado),
+      where('fechaInicio', '<', fechaFinTimestamp),
+      where('fechaFin', '>', fechaInicioTimestamp)
+    );
+    const querySnapshot = await getDocs(q);
+    const reservasSimultaneas = querySnapshot.size;
+
+    const espacioDoc = await getDoc(doc(db, 'espacios', espacioSeleccionado));
+    const capacidad = espacioDoc.data().capacidad;
+
+    if (reservasSimultaneas >= capacidad) {
+      alert('El espacio no está disponible en el horario seleccionado.');
+      return;
+    }
+
+    // Verificar que el bono tenga sesiones disponibles (si se seleccionó un bono)
+    if (bonoSeleccionado) {
+      const bonoRef = doc(db, 'bonos', bonoSeleccionado);
+      const bonoDoc = await getDoc(bonoRef);
+      if (bonoDoc.exists()) {
+        const sesionesRestantes = bonoDoc.data().sesionesRestantes;
+        if (sesionesRestantes <= 0) {
+          alert('El bono seleccionado no tiene sesiones restantes.');
+          return;
+        }
+      }
+    }
+
+    // Crear la reserva
+    await addDoc(collection(db, 'reservas'), {
+      clienteId: clienteSeleccionado,
+      espacioId: espacioSeleccionado,
+      fechaInicio: fechaInicioTimestamp,
+      fechaFin: fechaFinTimestamp,
+      estado: 'confirmada',
+      asistenciaRegistrada: false,
+      bonoId: bonoSeleccionado || null,
+    });
+
+    alert('Reserva creada exitosamente');
+    obtenerReservas(); // Actualizar las reservas
+  };
+
+  // Función para manejar la selección de un slot en el calendario
+  const manejarSeleccionSlot = async (slotInfo) => {
+    const confirmacion = window.confirm(
+      `¿Deseas crear una reserva desde ${slotInfo.start.toLocaleString()} hasta ${slotInfo.end.toLocaleString()}?`
+    );
+
+    if (confirmacion) {
+      if (!clienteSeleccionado || !espacioSeleccionado) {
+        alert('Por favor, selecciona un cliente y un espacio antes de crear una reserva.');
+        return;
+      }
+
+      try {
+        const fechaInicioTimestamp = Timestamp.fromDate(slotInfo.start);
+        const fechaFinTimestamp = Timestamp.fromDate(slotInfo.end);
+
+        await agregarReservaDirecta(fechaInicioTimestamp, fechaFinTimestamp);
+      } catch (error) {
+        console.error('Error al crear reserva desde el calendario:', error);
+        alert('Ocurrió un error al crear la reserva.');
+      }
+    }
+  };
+
+  // Funciones para mover y redimensionar reservas (drag and drop)
+  const moverReserva = async ({ event, start, end, isAllDay }) => {
     try {
-      if (!clienteSeleccionado) {
-        alert('Por favor, selecciona un cliente.');
-        return;
-      }
+      const fechaInicioTimestamp = Timestamp.fromDate(start);
+      const fechaFinTimestamp = Timestamp.fromDate(end);
 
-      if (!espacioSeleccionado) {
-        alert('Por favor, selecciona un espacio.');
-        return;
-      }
-
-      const fechaInicioTimestamp = Timestamp.fromDate(new Date(fechaInicio));
-      const fechaFinTimestamp = Timestamp.fromDate(new Date(fechaFin));
-
-      if (fechaFinTimestamp <= fechaInicioTimestamp) {
-        alert('La fecha de fin debe ser posterior a la fecha de inicio.');
-        return;
-      }
-
-      if (fechaInicioTimestamp <= Timestamp.now()) {
-        alert('La fecha de inicio debe ser posterior al momento actual.');
-        return;
-      }
-
+      // Verificar disponibilidad del espacio
       const reservasRef = collection(db, 'reservas');
       const q = query(
         reservasRef,
-        where('espacioId', '==', espacioSeleccionado),
+        where('espacioId', '==', event.espacioId),
         where('fechaInicio', '<', fechaFinTimestamp),
-        where('fechaFin', '>', fechaInicioTimestamp)
+        where('fechaFin', '>', fechaInicioTimestamp),
+        where('__name__', '!=', event.id) // Excluir la reserva actual
       );
       const querySnapshot = await getDocs(q);
       const reservasSimultaneas = querySnapshot.size;
 
-      const espacioDoc = await getDoc(doc(db, 'espacios', espacioSeleccionado));
+      const espacioDoc = await getDoc(doc(db, 'espacios', event.espacioId));
       const capacidad = espacioDoc.data().capacidad;
 
       if (reservasSimultaneas >= capacidad) {
@@ -171,43 +267,62 @@ function Reservas() {
         return;
       }
 
-      if (bonoSeleccionado) {
-        const bonoRef = doc(db, 'bonos', bonoSeleccionado);
-        const bonoDoc = await getDoc(bonoRef);
-        if (bonoDoc.exists()) {
-          const sesionesRestantes = bonoDoc.data().sesionesRestantes;
-          if (sesionesRestantes <= 0) {
-            alert('El bono seleccionado no tiene sesiones restantes.');
-            return;
-          }
-        }
-      }
-
-      await addDoc(collection(db, 'reservas'), {
-        clienteId: clienteSeleccionado,
-        espacioId: espacioSeleccionado,
+      await updateDoc(doc(db, 'reservas', event.id), {
         fechaInicio: fechaInicioTimestamp,
         fechaFin: fechaFinTimestamp,
-        estado: 'confirmada',
-        asistenciaRegistrada: false,
-        bonoId: bonoSeleccionado || null,
       });
 
-      alert('Reserva creada exitosamente');
-      setClienteSeleccionado('');
-      setEspacioSeleccionado('');
-      setFechaInicio('');
-      setFechaFin('');
-      setBonoSeleccionado('');
-      setBonosCliente([]);
-      obtenerReservas(); // Actualizar la lista de reservas
+      alert('Reserva actualizada');
+      obtenerReservas();
     } catch (error) {
-      console.error('Error al crear reserva:', error);
-      alert('Ocurrió un error al crear la reserva.');
+      console.error('Error al mover reserva:', error);
+      alert('Ocurrió un error al actualizar la reserva.');
     }
   };
 
-  // Función para registrar asistencia y actualizar bono
+  const redimensionarReserva = async ({ event, start, end }) => {
+    try {
+      const fechaInicioTimestamp = Timestamp.fromDate(start);
+      const fechaFinTimestamp = Timestamp.fromDate(end);
+
+      // Verificar que la fecha de fin sea posterior a la fecha de inicio
+      if (fechaFinTimestamp <= fechaInicioTimestamp) {
+        alert('La fecha de fin debe ser posterior a la fecha de inicio.');
+        return;
+      }
+
+      const reservasRef = collection(db, 'reservas');
+      const q = query(
+        reservasRef,
+        where('espacioId', '==', event.espacioId),
+        where('fechaInicio', '<', fechaFinTimestamp),
+        where('fechaFin', '>', fechaInicioTimestamp),
+        where('__name__', '!=', event.id) // Excluir la reserva actual
+      );
+      const querySnapshot = await getDocs(q);
+      const reservasSimultaneas = querySnapshot.size;
+
+      const espacioDoc = await getDoc(doc(db, 'espacios', event.espacioId));
+      const capacidad = espacioDoc.data().capacidad;
+
+      if (reservasSimultaneas >= capacidad) {
+        alert('El espacio no está disponible en el horario seleccionado.');
+        return;
+      }
+
+      await updateDoc(doc(db, 'reservas', event.id), {
+        fechaInicio: fechaInicioTimestamp,
+        fechaFin: fechaFinTimestamp,
+      });
+
+      alert('Reserva actualizada');
+      obtenerReservas();
+    } catch (error) {
+      console.error('Error al redimensionar reserva:', error);
+      alert('Ocurrió un error al actualizar la reserva.');
+    }
+  };
+
   const registrarAsistencia = async (event) => {
     if (event.asistenciaRegistrada) {
       alert('La asistencia ya ha sido registrada para esta reserva.');
@@ -245,7 +360,6 @@ function Reservas() {
     }
   };
 
-  // Función para cancelar una reserva
   const cancelarReserva = async (event) => {
     const confirmacion = window.confirm('¿Estás seguro de que deseas cancelar esta reserva?');
     if (confirmacion) {
@@ -260,7 +374,6 @@ function Reservas() {
     }
   };
 
-  // Manejar la selección de un evento en el calendario
   const manejarSeleccionEvento = (event) => {
     const opciones = window.prompt(
       `Selecciona una opción para la reserva:\n1. Registrar Asistencia\n2. Cancelar Reserva\n3. Cerrar`
@@ -277,16 +390,13 @@ function Reservas() {
     <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <h1 className="text-2xl font-bold mb-4">Reservas</h1>
 
-      {/* Formulario para agregar reserva */}
-      <form onSubmit={agregarReserva} className="space-y-4 mb-8">
-        {/* Selección de cliente */}
+      <div className="space-y-4 mb-8">
         <div>
           <label className="block font-medium text-gray-700">Cliente:</label>
           <select
             value={clienteSeleccionado}
             onChange={(e) => setClienteSeleccionado(e.target.value)}
             className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
-            required
           >
             <option value="">Selecciona un cliente</option>
             {clientes.map((cliente) => (
@@ -297,14 +407,12 @@ function Reservas() {
           </select>
         </div>
 
-        {/* Selección de espacio */}
         <div>
           <label className="block font-medium text-gray-700">Espacio:</label>
           <select
             value={espacioSeleccionado}
             onChange={(e) => setEspacioSeleccionado(e.target.value)}
             className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
-            required
           >
             <option value="">Selecciona un espacio</option>
             {espacios.map((espacio) => (
@@ -315,7 +423,6 @@ function Reservas() {
           </select>
         </div>
 
-        {/* Selección de bono si el cliente tiene bonos */}
         {bonosCliente.length > 0 && (
           <div>
             <label className="block font-medium text-gray-700">Bono:</label>
@@ -333,41 +440,8 @@ function Reservas() {
             </select>
           </div>
         )}
+      </div>
 
-        {/* Fecha y hora de inicio */}
-        <div>
-          <label className="block font-medium text-gray-700">Fecha y Hora de Inicio:</label>
-          <input
-            type="datetime-local"
-            value={fechaInicio}
-            onChange={(e) => setFechaInicio(e.target.value)}
-            className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
-            required
-          />
-        </div>
-
-        {/* Fecha y hora de fin */}
-        <div>
-          <label className="block font-medium text-gray-700">Fecha y Hora de Fin:</label>
-          <input
-            type="datetime-local"
-            value={fechaFin}
-            onChange={(e) => setFechaFin(e.target.value)}
-            className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
-            required
-          />
-        </div>
-
-        {/* Botón para agregar reserva */}
-        <button
-          type="submit"
-          className="bg-indigo-500 text-white px-4 py-2 rounded-md hover:bg-indigo-600"
-        >
-          Agregar Reserva
-        </button>
-      </form>
-
-      {/* Leyenda de colores */}
       <div className="flex space-x-4 my-4">
         <div className="flex items-center">
           <div className="w-4 h-4 bg-green-300 mr-2"></div>
@@ -379,25 +453,30 @@ function Reservas() {
         </div>
       </div>
 
-      {/* Calendario para mostrar reservas */}
-      <div style={{ height: '500px' }}>
-        <Calendar
-          localizer={localizer}
-          events={eventos}
-          startAccessor="start"
-          endAccessor="end"
-          views={['day', 'week']}
-          defaultView="day"
-          step={30}
-          timeslots={2}
-          selectable
-          onSelectEvent={manejarSeleccionEvento}
-          eventPropGetter={(event) => {
-            let backgroundColor = event.asistenciaRegistrada ? '#6EE7B7' : '#FCA5A5';
-            return { style: { backgroundColor } };
-          }}
-        />
-      </div>
+      <DndProvider backend={HTML5Backend}>
+        <div style={{ height: '500px' }}>
+          <DragAndDropCalendar
+            localizer={localizer}
+            events={eventos}
+            startAccessor="start"
+            endAccessor="end"
+            views={['day', 'week']}
+            defaultView="day"
+            step={30}
+            timeslots={2}
+            selectable
+            resizable
+            onEventDrop={moverReserva}
+            onEventResize={redimensionarReserva}
+            onSelectEvent={manejarSeleccionEvento}
+            onSelectSlot={manejarSeleccionSlot}
+            eventPropGetter={(event) => {
+              let backgroundColor = event.asistenciaRegistrada ? '#6EE7B7' : '#FCA5A5';
+              return { style: { backgroundColor } };
+            }}
+          />
+        </div>
+      </DndProvider>
     </div>
   );
 }
